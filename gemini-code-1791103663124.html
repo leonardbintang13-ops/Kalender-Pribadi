@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal & Tugas Pribadi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- ==================== HALAMAN AUTH (LOGIN & REGISTER) ==================== -->
+    <div id="auth-container" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+            <!-- Header Auth -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 text-2xl mb-3 border border-indigo-500/20 shadow-inner">⚡</div>
+                <h2 id="auth-title" class="text-xl font-bold text-white">Masuk ke Jadwal Pribadi</h2>
+                <p id="auth-subtitle" class="text-xs text-slate-400 mt-1">Kelola jadwal dan tugasmu dengan akun pribadimu</p>
+            </div>
+
+            <!-- Tab Switcher Auth -->
+            <div class="flex bg-slate-800 p-1 rounded-xl mb-6 border border-slate-700/50">
+                <button type="button" onclick="switchAuthTab('login')" id="tab-login" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-indigo-600 text-white shadow-sm cursor-pointer">Masuk</button>
+                <button type="button" onclick="switchAuthTab('register')" id="tab-register" class="flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white cursor-pointer">Daftar Akun</button>
+            </div>
+
+            <!-- Form Auth -->
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="name-field-group" class="hidden">
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Nama Lengkap</label>
+                    <input type="text" id="auth-name" placeholder="Contoh: Leonard Bintang" class="w-full px-3.5 py-2.5 text-sm bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-white placeholder-slate-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Username</label>
+                    <input type="text" id="auth-username" required placeholder="Masukkan username..." class="w-full px-3.5 py-2.5 text-sm bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-white placeholder-slate-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Kata Sandi</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 text-sm bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-white placeholder-slate-500">
+                </div>
+                <div id="auth-error" class="text-xs text-rose-400 font-semibold text-center hidden"></div>
+                <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer">
+                    Masuk Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL EDIT TUGAS ==================== -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white">Edit Tugas / Agenda</h3>
+                <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+            </div>
+            <form id="edit-form" onsubmit="saveEditedEvent(event)" class="space-y-3">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-date-key">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Judul Agenda</label>
+                    <input type="text" id="edit-title" required class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Tanggal</label>
+                    <input type="date" id="edit-date" required class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Kategori</label>
+                    <select id="edit-category" class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Tugas">Tugas</option>
+                        <option value="Kegiatan Sekolah">Kegiatan Sekolah</option>
+                        <option value="Ujian">Ujian</option>
+                        <option value="Catatan Pribadi">Catatan Pribadi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Status / Urgensi</label>
+                    <select id="edit-status" class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Sedang">Sedang</option>
+                        <option value="Urgent">Urgent 🔥</option>
+                        <option value="Selesai">Selesai ✅</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Deskripsi</label>
+                    <textarea id="edit-desc" rows="3" class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg cursor-pointer">Batal</button>
+                    <button type="submit" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow cursor-pointer">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== APLIKASI UTAMA ==================== -->
+    <div id="app-container" class="flex flex-col min-h-screen hidden">
+        
+        <!-- Header Atas: Navigasi View & Pencarian -->
+        <header class="bg-slate-900 border-b border-slate-800 px-4 sm:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-40 backdrop-blur-md bg-slate-900/90">
+            
+            <!-- Tombol Switch View Utama -->
+            <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700/50 w-full md:w-auto justify-center">
+                <button type="button" onclick="switchMainView('calendar')" id="view-btn-calendar" class="px-4 py-2 text-xs font-bold rounded-xl transition bg-indigo-600 text-white shadow-md flex items-center space-x-2 cursor-pointer">
+                    <span>📅</span> <span>Kalender Bulanan</span>
+                </button>
+                <button type="button" onclick="switchMainView('list')" id="view-btn-list" class="px-4 py-2 text-xs font-bold rounded-xl transition text-slate-400 hover:text-white flex items-center space-x-2 cursor-pointer">
+                    <span>📋</span> <span>Daftar Agenda & Tugas</span>
+                </button>
+            </div>
+
+            <!-- Bagian Kanan Header: Pencarian & Filter (Muncul aktif di mode List atau Global) + Logout -->
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <div class="relative flex-1 md:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                    <input type="text" id="search-input" oninput="renderListView()" placeholder="Cari tugas atau acara..." class="w-full pl-9 pr-4 py-2 text-xs bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <select id="filter-category" onchange="renderListView()" class="px-3 py-2 text-xs bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                    <option value="Semua">Semua Kategori</option>
+                    <option value="Tugas">Tugas</option>
+                    <option value="Kegiatan Sekolah">Kegiatan Sekolah</option>
+                    <option value="Ujian">Ujian</option>
+                    <option value="Catatan Pribadi">Catatan Pribadi</option>
+                </select>
+                <button type="button" onclick="logout()" class="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition border border-rose-500/20 flex items-center space-x-1 cursor-pointer">
+                    <span>🚪</span> <span class="hidden sm:inline">Log Out</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== VIEW 1: KALENDER BULANAN ==================== -->
+        <div id="view-calendar" class="flex-grow flex flex-col max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Kolom Kalender (2 Span) -->
+            <section class="lg:col-span-2 bg-slate-800/60 border border-slate-800 rounded-2xl p-6 flex flex-col shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="month-year" class="text-xl font-bold text-white"></h3>
+                    <div class="flex space-x-2">
+                        <button type="button" onclick="changeMonth(-1)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition cursor-pointer">&larr;</button>
+                        <button type="button" onclick="goToToday()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl hover:bg-indigo-500/30 transition cursor-pointer">Hari Ini</button>
+                        <button type="button" onclick="changeMonth(1)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition cursor-pointer">&rarr;</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-500 mb-2">
+                    <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-2 flex-grow"></div>
+            </section>
+
+            <!-- Kolom Tambah Agenda (Sidebar) -->
+            <section class="bg-slate-800/60 border border-slate-800 rounded-2xl p-6 flex flex-col shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tanggal Dipilih</span>
+                    <span id="selected-date-label" class="text-xs font-bold bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">-</span>
+                </div>
+
+                <form id="event-form" onsubmit="addEvent(event)" class="space-y-3 mb-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                    <input type="hidden" id="selected-date-input">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Judul Agenda / Tugas</label>
+                        <input type="text" id="event-title" required placeholder="Contoh: PR Matematika" class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Kategori</label>
+                        <select id="event-category" class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Tugas">Tugas</option>
+                            <option value="Kegiatan Sekolah">Kegiatan Sekolah</option>
+                            <option value="Ujian">Ujian</option>
+                            <option value="Catatan Pribadi">Catatan Pribadi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Status / Urgensi</label>
+                        <select id="event-status" class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Sedang">Sedang</option>
+                            <option value="Urgent">Urgent 🔥</option>
+                            <option value="Selesai">Selesai ✅</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Deskripsi (Opsional)</label>
+                        <textarea id="event-desc" rows="2" placeholder="Detail tugas..." class="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none placeholder-slate-500"></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow transition cursor-pointer">
+                        + Tambahkan Tugas
+                    </button>
+                </form>
+
+                <div class="flex-grow overflow-y-auto max-h-[240px] pr-1 space-y-2">
+                    <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Agenda Pada Tanggal Ini</h4>
+                    <div id="event-list" class="space-y-2">
+                        <p class="text-xs text-slate-500 italic text-center py-4">Pilih tanggal di kalender.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==================== VIEW 2: DAFTAR AGENDA & TUGAS (CARD GRID) ==================== -->
+        <div id="view-list" class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 hidden">
+            <div class="mb-6 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Semua Daftar Agenda & Tugas</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Kelola status, edit, atau tandai selesai tugasmu di sini.</p>
+                </div>
+                <div id="list-count-badge" class="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-bold px-3 py-1.5 rounded-xl">
+                    0 Tugas
+                </div>
+            </div>
+
+            <!-- Grid Kartu Tugas -->
+            <div id="card-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800 mt-auto">
+            Jadwal Pribadi &bull; Data aman tersimpan di perangkatmu
+        </footer>
+    </div>
+
+    <!-- Script Aplikasi Lengkap -->
+    <script>
+        let currentUser = null;
+        let authMode = 'login';
+        let today = new Date();
+        let currentMonth = today.getMonth();
+        let currentYear = today.getFullYear();
+        let selectedDateStr = formatDateKey(today);
+        let events = {};
+        let currentMainView = 'calendar'; // 'calendar' or 'list'
+
+        const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+        window.onload = function() {
+            checkAuthSession();
+        };
+
+        function checkAuthSession() {
+            let savedUser = localStorage.getItem('bro_leonard_logged_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            } else {
+                showAuthModal();
+            }
+        }
+
+        function showAuthModal() {
+            document.getElementById('auth-container').classList.remove('hidden');
+            document.getElementById('app-container').classList.add('hidden');
+        }
+
+        function showApp() {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            loadUserEvents();
+            initCalendar();
+            renderListView();
+        }
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            let titleEl = document.getElementById('auth-title');
+            let subtitleEl = document.getElementById('auth-subtitle');
+            let nameGroup = document.getElementById('name-field-group');
+            let submitBtn = document.getElementById('auth-submit-btn');
+            let tabLogin = document.getElementById('tab-login');
+            let tabRegister = document.getElementById('tab-register');
+            let errEl = document.getElementById('auth-error');
+            errEl.classList.add('hidden');
+
+            if (mode === 'login') {
+                titleEl.innerText = "Masuk ke Jadwal Pribadi";
+                subtitleEl.innerText = "Kelola jadwal dan tugasmu dengan akun pribadimu";
+                nameGroup.classList.add('hidden');
+                submitBtn.innerText = "Masuk Sekarang";
+                tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-indigo-600 text-white shadow-sm cursor-pointer";
+                tabRegister.className = "flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white cursor-pointer";
+            } else {
+                titleEl.innerText = "Daftar Akun Baru";
+                subtitleEl.innerText = "Buat akunmu sendiri untuk mulai mencatat jadwal";
+                nameGroup.classList.remove('hidden');
+                submitBtn.innerText = "Daftar & Masuk";
+                tabRegister.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-indigo-600 text-white shadow-sm cursor-pointer";
+                tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white cursor-pointer";
+            }
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            let usernameInput = document.getElementById('auth-username').value.trim();
+            let passwordInput = document.getElementById('auth-password').value;
+            let nameInput = document.getElementById('auth-name').value.trim();
+            let errEl = document.getElementById('auth-error');
+
+            let users = JSON.parse(localStorage.getItem('bro_leonard_users')) || [];
+
+            if (authMode === 'register') {
+                if (!nameInput) {
+                    errEl.innerText = "Nama lengkap harus diisi!";
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                let existing = users.find(u => u.username === usernameInput);
+                if (existing) {
+                    errEl.innerText = "Username sudah terdaftar, silakan masuk.";
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                let newUser = { username: usernameInput, password: passwordInput, name: nameInput };
+                users.push(newUser);
+                localStorage.setItem('bro_leonard_users', JSON.stringify(users));
+                
+                currentUser = newUser;
+                localStorage.setItem('bro_leonard_logged_user', JSON.stringify(currentUser));
+                showApp();
+            } else {
+                let user = users.find(u => u.username === usernameInput && u.password === passwordInput);
+                
+                if (!user && usernameInput === "leonard" && passwordInput === "123456") {
+                    user = { username: "leonard", password: "123456", name: "Leonard" };
+                }
+
+                if (user) {
+                    currentUser = user;
+                    localStorage.setItem('bro_leonard_logged_user', JSON.stringify(currentUser));
+                    showApp();
+                } else {
+                    errEl.innerText = "Username atau kata sandi salah!";
+                    errEl.classList.remove('hidden');
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('bro_leonard_logged_user');
+            currentUser = null;
+            document.getElementById('auth-username').value = "";
+            document.getElementById('auth-password').value = "";
+            showAuthModal();
+        }
+
+        function loadUserEvents() {
+            let storageKey = `bro_leonard_events_${currentUser.username}`;
+            events = JSON.parse(localStorage.getItem(storageKey));
+            if (!events) {
+                events = {};
+                localStorage.setItem(storageKey, JSON.stringify(events));
+            }
+        }
+
+        function saveUserEvents() {
+            let storageKey = `bro_leonard_events_${currentUser.username}`;
+            localStorage.setItem(storageKey, JSON.stringify(events));
+        }
+
+        function formatDateKey(date) {
+            let d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
+
+        function switchMainView(view) {
+            currentMainView = view;
+            let btnCal = document.getElementById('view-btn-calendar');
+            let btnList = document.getElementById('view-btn-list');
+            let viewCal = document.getElementById('view-calendar');
+            let viewList = document.getElementById('view-list');
+
+            if (view === 'calendar') {
+                btnCal.className = "px-4 py-2 text-xs font-bold rounded-xl transition bg-indigo-600 text-white shadow-md flex items-center space-x-2 cursor-pointer";
+                btnList.className = "px-4 py-2 text-xs font-bold rounded-xl transition text-slate-400 hover:text-white flex items-center space-x-2 cursor-pointer";
+                viewCal.classList.remove('hidden');
+                viewList.classList.add('hidden');
+                initCalendar();
+            } else {
+                btnList.className = "px-4 py-2 text-xs font-bold rounded-xl transition bg-indigo-600 text-white shadow-md flex items-center space-x-2 cursor-pointer";
+                btnCal.className = "px-4 py-2 text-xs font-bold rounded-xl transition text-slate-400 hover:text-white flex items-center space-x-2 cursor-pointer";
+                viewList.classList.remove('hidden');
+                viewCal.classList.add('hidden');
+                renderListView();
+            }
+        }
+
+        function initCalendar() {
+            renderCalendar(currentMonth, currentYear);
+            selectDate(selectedDateStr);
+        }
+
+        function renderCalendar(month, year) {
+            const grid = document.getElementById('calendar-grid');
+            if (!grid) return;
+            grid.innerHTML = "";
+            
+            const monthYearEl = document.getElementById('month-year');
+            if (monthYearEl) monthYearEl.innerText = `${months[month]} ${year}`;
+
+            let firstDayIndex = new Date(year, month, 1).getDay();
+            let totalDays = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                let emptyCell = document.createElement('div');
+                emptyCell.className = "h-24 bg-slate-900/30 rounded-xl opacity-20";
+                grid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                let dateObj = new Date(year, month, day);
+                let dateStr = formatDateKey(dateObj);
+                
+                let cell = document.createElement('div');
+                cell.className = `h-24 p-2 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer transition hover:border-indigo-500 bg-slate-900/50`;
+                if (dateStr === selectedDateStr) {
+                    cell.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-950/20');
+                }
+
+                let isToday = dateStr === formatDateKey(new Date());
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold ${isToday ? 'bg-indigo-600 text-white px-2 py-0.5 rounded-full' : 'text-slate-300'}">${day}</span>
+                        ${events[dateStr] && events[dateStr].length > 0 ? `<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>` : ''}
+                    </div>
+                    <div class="overflow-hidden space-y-1 mt-1">
+                        ${events[dateStr] ? events[dateStr].slice(0, 2).map(e => `
+                            <div class="text-[10px] px-1.5 py-0.5 rounded truncate font-medium ${                                 e.status === 'Selesai' ? 'bg-emerald-950 text-emerald-300 line-through opacity-75' :                                 e.status === 'Urgent' ? 'bg-rose-950 text-rose-300 font-bold' : 'bg-slate-800 text-slate-200'                             }">${e.title}</div>
+                        `).join('') : ''}
+                    </div>
+                `;
+                cell.onclick = () => selectDate(dateStr);
+                grid.appendChild(cell);
+            }
+        }
+
+        function changeMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar(currentMonth, currentYear);
+        }
+
+        function goToToday() {
+            let now = new Date();
+            currentMonth = now.getMonth();
+            currentYear = now.getFullYear();
+            renderCalendar(currentMonth, currentYear);
+            selectDate(formatDateKey(now));
+        }
+
+        function selectDate(dateStr) {
+            selectedDateStr = dateStr;
+            document.getElementById('selected-date-input').value = dateStr;
+            let parts = dateStr.split('-');
+            document.getElementById('selected-date-label').innerText = `${parts[2]} ${months[parseInt(parts[1])-1]} ${parts[0]}`;
+            renderCalendar(currentMonth, currentYear);
+            renderEventsForSelectedDate();
+        }
+
+        function addEvent(e) {
+            e.preventDefault();
+            let title = document.getElementById('event-title').value;
+            let description = document.getElementById('event-desc').value;
+            let category = document.getElementById('event-category').value;
+            let status = document.getElementById('event-status').value;
+            let date = document.getElementById('selected-date-input').value;
+
+            if (!events[date]) events[date] = [];
+            events[date].push({ id: Date.now(), title, description, category, status });
+            saveUserEvents();
+
+            document.getElementById('event-title').value = "";
+            document.getElementById('event-desc').value = "";
+            renderCalendar(currentMonth, currentYear);
+            renderEventsForSelectedDate();
+            renderListView();
+        }
+
+        function deleteEvent(dateStr, id) {
+            if (events[dateStr]) {
+                events[dateStr] = events[dateStr].filter(ev => ev.id !== id);
+                if (events[dateStr].length === 0) delete events[dateStr];
+                saveUserEvents();
+                renderCalendar(currentMonth, currentYear);
+                renderEventsForSelectedDate();
+                renderListView();
+            }
+        }
+
+        function toggleStatus(dateStr, id) {
+            if (events[dateStr]) {
+                let ev = events[dateStr].find(item => item.id === id);
+                if (ev) {
+                    ev.status = (ev.status === 'Selesai') ? 'Sedang' : 'Selesai';
+                    saveUserEvents();
+                    renderCalendar(currentMonth, currentYear);
+                    renderEventsForSelectedDate();
+                    renderListView();
+                }
+            }
+        }
+
+        function renderEventsForSelectedDate() {
+            let container = document.getElementById('event-list');
+            let dayEvents = events[selectedDateStr] || [];
+
+            if (dayEvents.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">Tidak ada agenda di tanggal ini.</p>`;
+                return;
+            }
+
+            container.innerHTML = dayEvents.map(ev => `
+                <div class="flex justify-between items-start p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm">
+                    <div class="space-y-1 flex-grow pr-2">
+                        <div class="font-bold text-white text-xs ${ev.status === 'Selesai' ? 'line-through text-slate-400' : ''}">${ev.title}</div>
+                        ${ev.description ? `<p class="text-[11px] text-slate-400">${ev.description}</p>` : ''}
+                        <div class="flex gap-1.5 pt-1">
+                            <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">${ev.category}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded font-bold ${ev.status === 'Selesai' ? 'bg-emerald-950 text-emerald-300' : ev.status === 'Urgent' ? 'bg-rose-950 text-rose-300' : 'bg-amber-950 text-amber-300'}">${ev.status}</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-1">
+                        <button type="button" onclick="openEditModal('${selectedDateStr}', ${ev.id})" class="p-1.5 text-slate-400 hover:text-white rounded bg-slate-800 text-xs cursor-pointer" title="Edit">✏️</button>
+                        <button type="button" onclick="deleteEvent('${selectedDateStr}', ${ev.id})" class="p-1.5 text-rose-400 hover:text-rose-300 rounded bg-slate-800 text-xs cursor-pointer" title="Hapus">&times;</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderListView() {
+            let container = document.getElementById('card-grid-container');
+            let countBadge = document.getElementById('list-count-badge');
+            let searchQuery = document.getElementById('search-input').value.toLowerCase();
+            let selectedCategory = document.getElementById('filter-category').value;
+
+            let allEvents = [];
+            for (let dateStr in events) {
+                events[dateStr].forEach(ev => {
+                    allEvents.push({ ...ev, dateStr: dateStr });
+                });
+            }
+
+            let filtered = allEvents.filter(ev => {
+                let matchSearch = ev.title.toLowerCase().includes(searchQuery) || (ev.description && ev.description.toLowerCase().includes(searchQuery));
+                let matchCat = (selectedCategory === 'Semua' || ev.category === selectedCategory);
+                return matchSearch && matchCat;
+            });
+
+            filtered.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+            countBadge.innerText = `${filtered.length} Tugas`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs italic bg-slate-800/40 border border-slate-800 rounded-2xl">Tidak ada tugas atau agenda yang ditemukan.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(ev => {
+                let parts = ev.dateStr.split('-');
+                let formattedDate = `${parts[2]} ${months[parseInt(parts[1])-1]} ${parts[0]}`;
+                let isCompleted = ev.status === 'Selesai';
+
+                return `
+                    <div class="bg-slate-800/60 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 flex flex-col justify-between shadow-lg transition">
+                        <div>
+                            <div class="flex justify-between items-start gap-2 mb-3">
+                                <span class="text-[10px] font-bold px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700">${ev.category}</span>
+                                <span class="text-[10px] font-bold px-2.5 py-1 rounded-md ${
+                                    isCompleted ? 'bg-emerald-950 text-emerald-300 border border-emerald-900' :
+                                    ev.status === 'Urgent' ? 'bg-rose-950 text-rose-300 border border-rose-900' : 'bg-amber-950 text-amber-300 border border-amber-900'
+                                }">${ev.status === 'Urgent' ? '🔥 ' : ''}${ev.status}</span>
+                            </div>
+
+                            <h3 class="font-bold text-white text-sm mb-1.5 ${isCompleted ? 'line-through text-slate-400' : ''}">${ev.title}</h3>
+                            <div class="text-[11px] text-slate-400 flex items-center space-x-1 mb-3">
+                                <span>📅</span>
+                                <span>${formattedDate}</span>
+                            </div>
+
+                            ${ev.description ? `<p class="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 mb-4 whitespace-pre-line">${ev.description}</p>` : '<div class="mb-4"></div>'}
+                        </div>
+
+                        <div class="flex justify-between items-center pt-3 border-t border-slate-800/80">
+                            <label class="flex items-center space-x-2 cursor-pointer text-xs font-semibold text-slate-300 hover:text-white">
+                                <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleStatus('${ev.dateStr}', ${ev.id})" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                                <span>Tandai Selesai</span>
+                            </label>
+                            <div class="flex space-x-1.5">
+                                <button type="button" onclick="openEditModal('${ev.dateStr}', ${ev.id})" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs transition cursor-pointer" title="Edit Tugas">✏️</button>
+                                <button type="button" onclick="deleteEvent('${ev.dateStr}', ${ev.id})" class="p-2 bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded-xl text-xs transition cursor-pointer" title="Hapus Tugas">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openEditModal(dateStr, id) {
+            let ev = events[dateStr].find(item => item.id === id);
+            if (!ev) return;
+
+            document.getElementById('edit-id').value = ev.id;
+            document.getElementById('edit-date-key').value = dateStr;
+            document.getElementById('edit-title').value = ev.title;
+            document.getElementById('edit-date').value = dateStr;
+            document.getElementById('edit-category').value = ev.category;
+            document.getElementById('edit-status').value = ev.status;
+            document.getElementById('edit-desc').value = ev.description || '';
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveEditedEvent(e) {
+            e.preventDefault();
+            let id = parseInt(document.getElementById('edit-id').value);
+            let oldDateStr = document.getElementById('edit-date-key').value;
+            let newDateStr = document.getElementById('edit-date').value;
+            let title = document.getElementById('edit-title').value;
+            let category = document.getElementById('edit-category').value;
+            let status = document.getElementById('edit-status').value;
+            let description = document.getElementById('edit-desc').value;
+
+            let evIndex = events[oldDateStr].findIndex(item => item.id === id);
+            if (evIndex !== -1) {
+                let ev = events[oldDateStr].splice(evIndex, 1)[0];
+                if (events[oldDateStr].length === 0) delete events[oldDateStr];
+
+                ev.title = title;
+                ev.category = category;
+                ev.status = status;
+                ev.description = description;
+
+                if (!events[newDateStr]) events[newDateStr] = [];
+                events[newDateStr].push(ev);
+
+                saveUserEvents();
+                closeEditModal();
+                renderCalendar(currentMonth, currentYear);
+                renderEventsForSelectedDate();
+                renderListView();
+            }
+        }
+    </script>
+</body>
+</html>
